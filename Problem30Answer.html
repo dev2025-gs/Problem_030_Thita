@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Flood Fill – Visualizer</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f7fa;
+        padding: 20px;
+      }
+      h1 {
+        margin-bottom: 5px;
+      }
+      input, textarea {
+        width: 400px;
+        padding: 8px;
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+      button {
+        padding: 8px 14px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-left: 8px;
+      }
+      #gridWrapper {
+        position: relative;
+        margin-top: 30px;
+      }
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(10, 32px);
+        grid-auto-rows: 32px;
+        gap: 2px;
+        background: #e0e7ef;
+        border: 2px solid #333;
+        padding: 10px;
+        width: max-content;
+      }
+      .cell {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        background: #fff;
+        border: 1px solid #bbb;
+        transition: background 0.3s;
+        position: relative;
+      }
+      .cell.start {
+        background: #ffe082;
+        border: 2px solid #ffb300;
+      }
+      .cell.filled {
+        background: #4fc3f7;
+        color: #fff;
+        border: 2px solid #0288d1;
+      }
+      .cell.visited {
+        background: #b2dfdb;
+      }
+      #info {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+      label {
+        font-size: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Flood Fill – Animation</h1>
+    <p>Enter image grid (comma-separated rows, e.g. 1 1 1,1 1 0,1 0 1):</p>
+    <textarea id="input" rows="3">1 1 1,1 1 0,1 0 1</textarea><br>
+    <label>Start Row: <input id="sr" type="number" value="1" min="0" max="9" style="width:60px"></label>
+    <label>Start Col: <input id="sc" type="number" value="1" min="0" max="9" style="width:60px"></label>
+    <label>New Color: <input id="color" type="number" value="2" min="0" max="9" style="width:60px"></label>
+    <button onclick="start()">Start Animation</button>
+    <button onclick="step()">Step</button>
+    <div id="gridWrapper">
+      <div id="grid"></div>
+    </div>
+    <div id="info"></div>
+    <script>
+      let image = [], sr = 0, sc = 0, color = 0, oldColor = 0, queue = [], stepIdx = 0, started = false;
+      let visited = [];
+      function parseInput() {
+        const rows = document.getElementById('input').value.trim().split(',');
+        image = rows.map(row => row.trim().split(/\s+/).map(Number));
+        sr = parseInt(document.getElementById('sr').value);
+        sc = parseInt(document.getElementById('sc').value);
+        color = parseInt(document.getElementById('color').value);
+        visited = Array.from({length: image.length}, () => Array(image[0].length).fill(false));
+      }
+      function start() {
+        parseInput();
+        if (image[sr][sc] === color) {
+          document.getElementById('info').innerHTML = 'Starting pixel already has the new color.';
+          draw();
+          started = false;
+          return;
+        }
+        oldColor = image[sr][sc];
+        queue = [[sr, sc]];
+        image[sr][sc] = color;
+        visited[sr][sc] = true;
+        stepIdx = 0;
+        started = true;
+        draw();
+        document.getElementById('info').innerHTML = 'Step 0: Start at ('+sr+','+sc+').';
+      }
+      function step() {
+        if (!started || queue.length === 0) {
+          document.getElementById('info').innerHTML += '<br><strong>✅ Done!</strong>';
+          started = false;
+          return;
+        }
+        const [x, y] = queue.shift();
+        const dir = [[1,0],[-1,0],[0,1],[0,-1]];
+        let added = [];
+        for (const [dx, dy] of dir) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < image.length && ny >= 0 && ny < image[0].length && !visited[nx][ny] && image[nx][ny] === oldColor) {
+            image[nx][ny] = color;
+            queue.push([nx, ny]);
+            visited[nx][ny] = true;
+            added.push('('+nx+','+ny+')');
+          }
+        }
+        stepIdx++;
+        draw();
+        document.getElementById('info').innerHTML = `Step ${stepIdx}: Filled neighbors ${added.length ? added.join(', ') : 'none'}. Queue: [${queue.map(([a,b])=>`(${a},${b})`).join(', ')}]`;
+        if (queue.length === 0) {
+          document.getElementById('info').innerHTML += '<br><strong>✅ Done!</strong>';
+          started = false;
+        }
+      }
+      function draw() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        grid.style.gridTemplateColumns = `repeat(${image[0].length}, 32px)`;
+        image.forEach((row, i) => {
+          row.forEach((val, j) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            if (i === sr && j === sc) cell.classList.add('start');
+            if (visited[i][j]) cell.classList.add('filled');
+            cell.textContent = val;
+            grid.appendChild(cell);
+          });
+        });
+      }
+      // Initial draw
+      parseInput();
+      draw();
+    </script>
+  </body>
+</html>
